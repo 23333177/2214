@@ -9,16 +9,7 @@ import {
   Dimensions,
   StatusBar,
 } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
-import { IconSymbol } from '@/components/IconSymbol';
-import { colors, spacing, borderRadius, typography, shadows } from '@/styles/commonStyles';
-import { useApp } from '@/contexts/AppContext';
-import ProductCard from '@/components/ProductCard';
-import ArtworkCard from '@/components/ArtworkCard';
-import CartSheet from '@/components/CartSheet';
-import DecorativeBackground from '@/components/DecorativeBackground';
-import StarburstPattern from '@/components/StarburstPattern';
-import FloralElement from '@/components/FloralElement';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import Animated, {
   useAnimatedStyle,
   useSharedValue,
@@ -27,534 +18,383 @@ import Animated, {
   withRepeat,
   interpolate,
 } from 'react-native-reanimated';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { LinearGradient } from 'expo-linear-gradient';
+
+import { IconSymbol } from '@/components/IconSymbol';
+import { colors, spacing, borderRadius, typography, shadows } from '@/styles/commonStyles';
+import { useApp } from '@/contexts/AppContext';
+
+// Nouveaux composants créatifs
+import MorphingBackground from '@/components/MorphingBackground';
+import ParticleSystem from '@/components/ParticleSystem';
+import InteractiveArtCanvas from '@/components/InteractiveArtCanvas';
+import HolographicCard from '@/components/HolographicCard';
+import ChaosButton from '@/components/ChaosButton';
+
+// Composants existants
+import ArtworkCard from '@/components/ArtworkCard';
+import ProductCard from '@/components/ProductCard';
+import CartSheet from '@/components/CartSheet';
+import FloralElement from '@/components/FloralElement';
+import StarburstPattern from '@/components/StarburstPattern';
 
 const { width, height } = Dimensions.get('window');
 
 export default function HomeScreen() {
-  const { state, dispatch } = useApp();
-  const [showCart, setShowCart] = useState(false);
+  const { products, artworks, cartItems, isCartVisible, setIsCartVisible } = useApp();
+  const [selectedSection, setSelectedSection] = useState<'beats' | 'art' | 'chaos'>('chaos');
   
-  // Animations
-  const headerOpacity = useSharedValue(0);
-  const headerTranslateY = useSharedValue(-50);
-  const pulseScale = useSharedValue(1);
-  const rotateValue = useSharedValue(0);
-  const floatY = useSharedValue(0);
+  // Animations créatives
+  const chaosMode = useSharedValue(0);
+  const sectionTransition = useSharedValue(0);
+  const floatingElements = useSharedValue(0);
 
   React.useEffect(() => {
-    // Animation d'entrée
-    headerOpacity.value = withTiming(1, { duration: 1000 });
-    headerTranslateY.value = withSpring(0);
-    
-    // Animation de pulsation continue
-    pulseScale.value = withRepeat(
-      withTiming(1.05, { duration: 2000 }),
+    // Mode chaos permanent
+    chaosMode.value = withRepeat(
+      withTiming(1, { duration: 5000 }),
       -1,
       true
     );
-    
-    // Rotation continue
-    rotateValue.value = withRepeat(
-      withTiming(360, { duration: 15000 }),
+
+    // Éléments flottants
+    floatingElements.value = withRepeat(
+      withTiming(1, { duration: 8000 }),
       -1,
       false
     );
 
-    // Animation de flottement
-    floatY.value = withRepeat(
-      withTiming(-10, { duration: 3000 }),
-      -1,
-      true
-    );
-  }, []);
+    // Transition de section
+    sectionTransition.value = withSpring(selectedSection === 'chaos' ? 1 : 0);
+  }, [selectedSection]);
 
-  const headerAnimatedStyle = useAnimatedStyle(() => ({
-    opacity: headerOpacity.value,
-    transform: [{ translateY: headerTranslateY.value }],
-  }));
+  const chaosAnimatedStyle = useAnimatedStyle(() => {
+    const rotate = interpolate(chaosMode.value, [0, 1], [0, 360]);
+    const scale = interpolate(chaosMode.value, [0, 0.5, 1], [1, 1.1, 1]);
+    
+    return {
+      transform: [
+        { rotate: `${rotate}deg` },
+        { scale }
+      ],
+    };
+  });
 
-  const pulseAnimatedStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: pulseScale.value }],
-  }));
+  const floatingStyle = useAnimatedStyle(() => {
+    const translateY = interpolate(floatingElements.value, [0, 1], [0, -20]);
+    const opacity = interpolate(floatingElements.value, [0, 0.5, 1], [0.6, 1, 0.6]);
+    
+    return {
+      transform: [{ translateY }],
+      opacity,
+    };
+  });
 
-  const rotateAnimatedStyle = useAnimatedStyle(() => ({
-    transform: [{ rotate: `${rotateValue.value}deg` }],
-  }));
+  const renderChaosSection = () => (
+    <View style={styles.chaosSection}>
+      {/* Titre créatif délirant */}
+      <Animated.View style={[styles.chaosTitleContainer, chaosAnimatedStyle]}>
+        <HolographicCard intensity="high" animated={true}>
+          <Text style={styles.chaosTitle}>🎵 BEATMAKER GALAXY 🎨</Text>
+          <Text style={styles.chaosSubtitle}>Où la musique rencontre l'art dans le chaos créatif !</Text>
+        </HolographicCard>
+      </Animated.View>
 
-  const floatAnimatedStyle = useAnimatedStyle(() => ({
-    transform: [{ translateY: floatY.value }],
-  }));
+      {/* Boutons créatifs délirants */}
+      <View style={styles.chaosButtonsContainer}>
+        <ChaosButton
+          title="🔥 BEATS EXPLOSIFS"
+          onPress={() => setSelectedSection('beats')}
+          variant="chaos"
+          size="large"
+          style={styles.chaosButton}
+        />
+        
+        <ChaosButton
+          title="🎨 ART GALACTIQUE"
+          onPress={() => setSelectedSection('art')}
+          variant="glitch"
+          size="large"
+          style={styles.chaosButton}
+        />
+        
+        <ChaosButton
+          title="🛒 PANIER MAGIQUE"
+          onPress={() => setIsCartVisible(true)}
+          variant="primary"
+          size="medium"
+          style={styles.chaosButton}
+        />
+      </View>
 
-  const featuredProducts = state.products.slice(0, 4);
-  const featuredArtworks = state.artworks.slice(0, 3);
-  const cartItemsCount = state.cart.reduce((sum, item) => sum + item.quantity, 0);
+      {/* Éléments décoratifs flottants */}
+      <Animated.View style={[styles.floatingElement, floatingStyle, { top: 100, left: 50 }]}>
+        <StarburstPattern size={40} color={colors.primary} animated={true} />
+      </Animated.View>
+      
+      <Animated.View style={[styles.floatingElement, floatingStyle, { top: 200, right: 30 }]}>
+        <FloralElement size={35} color={colors.secondary} animated={true} variant="detailed" />
+      </Animated.View>
+      
+      <Animated.View style={[styles.floatingElement, floatingStyle, { bottom: 150, left: 80 }]}>
+        <StarburstPattern size={50} color={colors.accent} animated={true} />
+      </Animated.View>
+
+      {/* Stats créatives */}
+      <View style={styles.statsContainer}>
+        <HolographicCard intensity="medium" style={styles.statCard}>
+          <Text style={styles.statNumber}>🎵 {products.length}</Text>
+          <Text style={styles.statLabel}>Beats Épiques</Text>
+        </HolographicCard>
+        
+        <HolographicCard intensity="medium" style={styles.statCard}>
+          <Text style={styles.statNumber}>🎨 {artworks.length}</Text>
+          <Text style={styles.statLabel}>Œuvres Magiques</Text>
+        </HolographicCard>
+        
+        <HolographicCard intensity="medium" style={styles.statCard}>
+          <Text style={styles.statNumber}>🛒 {cartItems.length}</Text>
+          <Text style={styles.statLabel}>Trésors Collectés</Text>
+        </HolographicCard>
+      </View>
+    </View>
+  );
+
+  const renderBeatsSection = () => (
+    <View style={styles.section}>
+      <HolographicCard intensity="medium" style={styles.sectionHeader}>
+        <Text style={styles.sectionTitle}>🎵 BEATS COLLECTION</Text>
+        <Text style={styles.sectionSubtitle}>Des rythmes qui font vibrer l'univers</Text>
+      </HolographicCard>
+      
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.horizontalScroll}>
+        {products.slice(0, 5).map((product) => (
+          <View key={product.id} style={styles.cardWrapper}>
+            <HolographicCard intensity="low">
+              <ProductCard product={product} />
+            </HolographicCard>
+          </View>
+        ))}
+      </ScrollView>
+      
+      <ChaosButton
+        title="🔥 EXPLORER TOUS LES BEATS"
+        onPress={() => console.log('Navigate to shop')}
+        variant="chaos"
+        size="large"
+        style={styles.exploreButton}
+      />
+    </View>
+  );
+
+  const renderArtSection = () => (
+    <View style={styles.section}>
+      <HolographicCard intensity="medium" style={styles.sectionHeader}>
+        <Text style={styles.sectionTitle}>🎨 GALERIE COSMIQUE</Text>
+        <Text style={styles.sectionSubtitle}>L'art qui transcende les dimensions</Text>
+      </HolographicCard>
+      
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.horizontalScroll}>
+        {artworks.slice(0, 5).map((artwork) => (
+          <View key={artwork.id} style={styles.cardWrapper}>
+            <HolographicCard intensity="low">
+              <ArtworkCard artwork={artwork} />
+            </HolographicCard>
+          </View>
+        ))}
+      </ScrollView>
+      
+      <ChaosButton
+        title="🌌 PLONGER DANS L'ART"
+        onPress={() => console.log('Navigate to gallery')}
+        variant="glitch"
+        size="large"
+        style={styles.exploreButton}
+      />
+    </View>
+  );
 
   return (
-    <DecorativeBackground variant="mixed" intensity="light">
-      <SafeAreaView style={styles.container}>
-        <StatusBar barStyle="light-content" backgroundColor={colors.background} />
+    <View style={styles.container}>
+      <StatusBar barStyle="light-content" backgroundColor={colors.background} />
+      
+      {/* Background créatif morphant */}
+      <MorphingBackground intensity="intense" speed="medium">
+        {/* Système de particules interactif */}
+        <ParticleSystem particleCount={30} animated={true} />
         
-        {/* Header avec panier */}
-        <Animated.View style={[styles.header, headerAnimatedStyle]}>
-          <View style={styles.headerLeft}>
-            <Animated.View style={[styles.logoContainer, floatAnimatedStyle]}>
-              <StarburstPattern size={32} color={colors.primary} animated={true} />
-            </Animated.View>
-            <View style={styles.headerText}>
-              <Text style={styles.greeting}>Bienvenue sur</Text>
-              <Text style={styles.appName}>BeatGallery</Text>
-            </View>
-          </View>
-          <TouchableOpacity
-            style={styles.cartButton}
-            onPress={() => setShowCart(true)}
-          >
-            <LinearGradient
-              colors={colors.gradientPrimary}
-              style={styles.cartButtonGradient}
-            >
-              <IconSymbol name="cart" size={24} color={colors.text} />
-              {cartItemsCount > 0 && (
-                <View style={styles.cartBadge}>
-                  <Text style={styles.cartBadgeText}>{cartItemsCount}</Text>
-                </View>
-              )}
-            </LinearGradient>
-          </TouchableOpacity>
-        </Animated.View>
-
-        <ScrollView
-          style={styles.scrollView}
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={styles.scrollContent}
-        >
-          {/* Hero Section avec éléments décoratifs */}
-          <View style={styles.heroContainer}>
-            <LinearGradient
-              colors={colors.gradientSecondary}
-              style={styles.heroSection}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-            >
-              {/* Éléments décoratifs dans le hero */}
-              <View style={styles.heroDecorations}>
-                <Animated.View style={[styles.heroDecoration, styles.topLeft, rotateAnimatedStyle]}>
-                  <StarburstPattern size={24} color={colors.accent} animated={false} />
-                </Animated.View>
-                <Animated.View style={[styles.heroDecoration, styles.topRight, floatAnimatedStyle]}>
-                  <FloralElement size={20} color={colors.tertiary} animated={false} variant="simple" />
-                </Animated.View>
-                <Animated.View style={[styles.heroDecoration, styles.bottomLeft, floatAnimatedStyle]}>
-                  <FloralElement size={16} color={colors.accent} animated={false} variant="simple" />
-                </Animated.View>
-                <Animated.View style={[styles.heroDecoration, styles.bottomRight, rotateAnimatedStyle]}>
-                  <StarburstPattern size={20} color={colors.tertiary} animated={false} />
-                </Animated.View>
+        {/* Canvas d'art interactif */}
+        <InteractiveArtCanvas maxTouchPoints={15} fadeOutDuration={4000}>
+          <SafeAreaView style={styles.safeArea}>
+            <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+              {/* Navigation créative */}
+              <View style={styles.navigationContainer}>
+                <HolographicCard intensity="high" style={styles.navCard}>
+                  <View style={styles.navButtons}>
+                    <TouchableOpacity
+                      onPress={() => setSelectedSection('chaos')}
+                      style={[styles.navButton, selectedSection === 'chaos' && styles.navButtonActive]}
+                    >
+                      <Text style={styles.navButtonText}>🌀 CHAOS</Text>
+                    </TouchableOpacity>
+                    
+                    <TouchableOpacity
+                      onPress={() => setSelectedSection('beats')}
+                      style={[styles.navButton, selectedSection === 'beats' && styles.navButtonActive]}
+                    >
+                      <Text style={styles.navButtonText}>🎵 BEATS</Text>
+                    </TouchableOpacity>
+                    
+                    <TouchableOpacity
+                      onPress={() => setSelectedSection('art')}
+                      style={[styles.navButton, selectedSection === 'art' && styles.navButtonActive]}
+                    >
+                      <Text style={styles.navButtonText}>🎨 ART</Text>
+                    </TouchableOpacity>
+                  </View>
+                </HolographicCard>
               </View>
 
-              <Animated.View style={[styles.heroContent, pulseAnimatedStyle]}>
-                <View style={styles.heroIconContainer}>
-                  <LinearGradient
-                    colors={[colors.accent, colors.primary]}
-                    style={styles.heroIconGradient}
-                  >
-                    <IconSymbol name="music.note" size={48} color={colors.text} />
-                  </LinearGradient>
-                </View>
-                <Text style={styles.heroTitle}>Beats & Art</Text>
-                <Text style={styles.heroSubtitle}>
-                  Découvrez des beats uniques et explorez l'art contemporain
-                </Text>
-              </Animated.View>
-            </LinearGradient>
-          </View>
+              {/* Contenu selon la section */}
+              {selectedSection === 'chaos' && renderChaosSection()}
+              {selectedSection === 'beats' && renderBeatsSection()}
+              {selectedSection === 'art' && renderArtSection()}
 
-          {/* Navigation rapide avec décorations */}
-          <View style={styles.quickNav}>
-            <TouchableOpacity
-              style={styles.navButtonContainer}
-              onPress={() => dispatch({ type: 'SET_CURRENT_VIEW', payload: 'shop' })}
-            >
-              <LinearGradient
-                colors={colors.gradientPrimary}
-                style={styles.navButton}
-              >
-                <View style={styles.navButtonContent}>
-                  <IconSymbol name="music.note" size={24} color={colors.text} />
-                  <Text style={styles.navButtonText}>Boutique</Text>
-                </View>
-                <View style={styles.navButtonDecoration}>
-                  <StarburstPattern size={16} color={colors.text} animated={true} />
-                </View>
-              </LinearGradient>
-            </TouchableOpacity>
-            
-            <TouchableOpacity
-              style={styles.navButtonContainer}
-              onPress={() => dispatch({ type: 'SET_CURRENT_VIEW', payload: 'gallery' })}
-            >
-              <LinearGradient
-                colors={colors.gradientSecondary}
-                style={styles.navButton}
-              >
-                <View style={styles.navButtonContent}>
-                  <IconSymbol name="photo" size={24} color={colors.text} />
-                  <Text style={styles.navButtonText}>Galerie</Text>
-                </View>
-                <View style={styles.navButtonDecoration}>
-                  <FloralElement size={16} color={colors.text} animated={true} variant="simple" />
-                </View>
-              </LinearGradient>
-            </TouchableOpacity>
-          </View>
+              {/* Espace pour éviter que le contenu soit caché par la tab bar */}
+              <View style={styles.bottomSpacer} />
+            </ScrollView>
+          </SafeAreaView>
+        </InteractiveArtCanvas>
+      </MorphingBackground>
 
-          {/* Produits en vedette */}
-          <View style={styles.section}>
-            <View style={styles.sectionHeader}>
-              <View style={styles.sectionTitleContainer}>
-                <StarburstPattern size={20} color={colors.primary} animated={true} />
-                <Text style={styles.sectionTitle}>Beats en vedette</Text>
-              </View>
-              <TouchableOpacity
-                onPress={() => dispatch({ type: 'SET_CURRENT_VIEW', payload: 'shop' })}
-              >
-                <Text style={styles.seeAllText}>Voir tout</Text>
-              </TouchableOpacity>
-            </View>
-            
-            <View style={styles.productsGrid}>
-              {featuredProducts.map((product) => (
-                <ProductCard
-                  key={product.id}
-                  product={product}
-                  onPress={() => console.log('Product pressed:', product.title)}
-                />
-              ))}
-            </View>
-          </View>
-
-          {/* Œuvres d'art en vedette */}
-          <View style={styles.section}>
-            <View style={styles.sectionHeader}>
-              <View style={styles.sectionTitleContainer}>
-                <FloralElement size={20} color={colors.secondary} animated={true} variant="simple" />
-                <Text style={styles.sectionTitle}>Art en vedette</Text>
-              </View>
-              <TouchableOpacity
-                onPress={() => dispatch({ type: 'SET_CURRENT_VIEW', payload: 'gallery' })}
-              >
-                <Text style={styles.seeAllText}>Voir tout</Text>
-              </TouchableOpacity>
-            </View>
-            
-            {featuredArtworks.map((artwork) => (
-              <ArtworkCard
-                key={artwork.id}
-                artwork={artwork}
-                onPress={() => console.log('Artwork pressed:', artwork.title)}
-              />
-            ))}
-          </View>
-
-          {/* Call to action pour les artistes avec décorations */}
-          <View style={styles.ctaContainer}>
-            <LinearGradient
-              colors={colors.gradientAccent}
-              style={styles.ctaSection}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 0 }}
-            >
-              {/* Décorations CTA */}
-              <View style={styles.ctaDecorations}>
-                <View style={[styles.ctaDecoration, styles.ctaTopLeft]}>
-                  <FloralElement size={24} color={colors.background} animated={true} variant="detailed" />
-                </View>
-                <View style={[styles.ctaDecoration, styles.ctaTopRight]}>
-                  <StarburstPattern size={28} color={colors.background} animated={true} />
-                </View>
-              </View>
-
-              <View style={styles.ctaContent}>
-                <Text style={styles.ctaTitle}>Vous êtes artiste ?</Text>
-                <Text style={styles.ctaSubtitle}>
-                  Exposez gratuitement vos œuvres dans notre galerie
-                </Text>
-                <TouchableOpacity style={styles.ctaButton}>
-                  <LinearGradient
-                    colors={[colors.background, colors.surface]}
-                    style={styles.ctaButtonGradient}
-                  >
-                    <Text style={styles.ctaButtonText}>Rejoindre la galerie</Text>
-                    <IconSymbol name="arrow.right" size={20} color={colors.text} />
-                  </LinearGradient>
-                </TouchableOpacity>
-              </View>
-            </LinearGradient>
-          </View>
-        </ScrollView>
-
-        {/* Panier modal */}
-        <CartSheet isVisible={showCart} onClose={() => setShowCart(false)} />
-      </SafeAreaView>
-    </DecorativeBackground>
+      {/* Panier */}
+      <CartSheet isVisible={isCartVisible} onClose={() => setIsCartVisible(false)} />
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: colors.background,
   },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
-    backgroundColor: 'rgba(15, 15, 35, 0.8)',
-    borderBottomWidth: 1,
-    borderBottomColor: colors.primary,
-  },
-  headerLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  logoContainer: {
-    marginRight: spacing.md,
-  },
-  headerText: {
+  safeArea: {
     flex: 1,
-  },
-  greeting: {
-    color: colors.textSecondary,
-    fontSize: 14,
-  },
-  appName: {
-    color: colors.text,
-    fontSize: 24,
-    fontWeight: '700',
-  },
-  cartButton: {
-    position: 'relative',
-  },
-  cartButtonGradient: {
-    padding: spacing.md,
-    borderRadius: borderRadius.md,
-    position: 'relative',
-  },
-  cartBadge: {
-    position: 'absolute',
-    top: -4,
-    right: -4,
-    backgroundColor: colors.error,
-    borderRadius: 12,
-    minWidth: 24,
-    height: 24,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 2,
-    borderColor: colors.background,
-  },
-  cartBadgeText: {
-    color: colors.text,
-    fontSize: 12,
-    fontWeight: '700',
   },
   scrollView: {
     flex: 1,
   },
-  scrollContent: {
-    paddingBottom: 120, // Space for floating tab bar
+  navigationContainer: {
+    padding: spacing.md,
+    paddingTop: spacing.lg,
   },
-  heroContainer: {
-    margin: spacing.lg,
+  navCard: {
+    marginBottom: spacing.md,
   },
-  heroSection: {
-    borderRadius: borderRadius.xl,
-    padding: spacing.xl,
-    alignItems: 'center',
-    position: 'relative',
-    overflow: 'hidden',
-    ...shadows.large,
-  },
-  heroDecorations: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-  },
-  heroDecoration: {
-    position: 'absolute',
-  },
-  topLeft: {
-    top: spacing.md,
-    left: spacing.md,
-  },
-  topRight: {
-    top: spacing.md,
-    right: spacing.md,
-  },
-  bottomLeft: {
-    bottom: spacing.md,
-    left: spacing.md,
-  },
-  bottomRight: {
-    bottom: spacing.md,
-    right: spacing.md,
-  },
-  heroContent: {
-    alignItems: 'center',
-    zIndex: 1,
-  },
-  heroIconContainer: {
-    marginBottom: spacing.lg,
-  },
-  heroIconGradient: {
-    padding: spacing.lg,
-    borderRadius: borderRadius.round,
-    ...shadows.glow,
-  },
-  heroTitle: {
-    color: colors.text,
-    fontSize: 32,
-    fontWeight: '700',
-    marginBottom: spacing.sm,
-    textAlign: 'center',
-  },
-  heroSubtitle: {
-    color: colors.text,
-    fontSize: 16,
-    textAlign: 'center',
-    opacity: 0.9,
-    maxWidth: width * 0.8,
-  },
-  quickNav: {
+  navButtons: {
     flexDirection: 'row',
-    paddingHorizontal: spacing.lg,
-    marginBottom: spacing.xl,
-    gap: spacing.md,
-  },
-  navButtonContainer: {
-    flex: 1,
+    justifyContent: 'space-around',
   },
   navButton: {
-    borderRadius: borderRadius.lg,
-    padding: spacing.lg,
-    position: 'relative',
-    overflow: 'hidden',
-    ...shadows.medium,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    borderRadius: borderRadius.md,
+    backgroundColor: colors.surface + '80',
   },
-  navButtonContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
+  navButtonActive: {
+    backgroundColor: colors.primary + '80',
   },
   navButtonText: {
+    ...typography.button,
     color: colors.text,
-    fontSize: 16,
-    fontWeight: '600',
-    marginLeft: spacing.sm,
-  },
-  navButtonDecoration: {
-    position: 'absolute',
-    top: spacing.sm,
-    right: spacing.sm,
-    opacity: 0.6,
-  },
-  section: {
-    marginBottom: spacing.xl,
-  },
-  sectionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: spacing.lg,
-    marginBottom: spacing.lg,
-  },
-  sectionTitleContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-  },
-  sectionTitle: {
-    color: colors.text,
-    fontSize: 22,
+    fontSize: 14,
     fontWeight: '700',
   },
-  seeAllText: {
-    color: colors.primary,
-    fontSize: 14,
-    fontWeight: '600',
+  chaosSection: {
+    padding: spacing.md,
+    minHeight: height * 0.8,
   },
-  productsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    paddingHorizontal: spacing.lg,
-    justifyContent: 'space-between',
-  },
-  ctaContainer: {
-    margin: spacing.lg,
-  },
-  ctaSection: {
-    borderRadius: borderRadius.xl,
-    padding: spacing.xl,
-    position: 'relative',
-    overflow: 'hidden',
-    ...shadows.large,
-  },
-  ctaDecorations: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-  },
-  ctaDecoration: {
-    position: 'absolute',
-    opacity: 0.7,
-  },
-  ctaTopLeft: {
-    top: spacing.md,
-    left: spacing.md,
-  },
-  ctaTopRight: {
-    top: spacing.md,
-    right: spacing.md,
-  },
-  ctaContent: {
+  chaosTitleContainer: {
+    marginBottom: spacing.xl,
     alignItems: 'center',
+  },
+  chaosTitle: {
+    ...typography.h1,
+    color: colors.text,
+    textAlign: 'center',
+    fontSize: 28,
+    fontWeight: '900',
+    marginBottom: spacing.sm,
+  },
+  chaosSubtitle: {
+    ...typography.body,
+    color: colors.textSecondary,
+    textAlign: 'center',
+    fontSize: 16,
+  },
+  chaosButtonsContainer: {
+    gap: spacing.lg,
+    marginBottom: spacing.xl,
+  },
+  chaosButton: {
+    marginVertical: spacing.sm,
+  },
+  floatingElement: {
+    position: 'absolute',
     zIndex: 1,
   },
-  ctaTitle: {
-    color: colors.background,
-    fontSize: 26,
-    fontWeight: '700',
-    marginBottom: spacing.sm,
-    textAlign: 'center',
-  },
-  ctaSubtitle: {
-    color: colors.background,
-    fontSize: 16,
-    textAlign: 'center',
-    marginBottom: spacing.xl,
-    opacity: 0.9,
-    maxWidth: width * 0.8,
-  },
-  ctaButton: {
-    borderRadius: borderRadius.lg,
-    overflow: 'hidden',
-  },
-  ctaButtonGradient: {
+  statsContainer: {
     flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: spacing.xl,
-    paddingVertical: spacing.lg,
-    gap: spacing.sm,
+    justifyContent: 'space-around',
+    marginTop: spacing.xl,
   },
-  ctaButtonText: {
+  statCard: {
+    alignItems: 'center',
+    minWidth: 100,
+  },
+  statNumber: {
+    ...typography.h2,
+    color: colors.primary,
+    fontWeight: '900',
+    fontSize: 24,
+  },
+  statLabel: {
+    ...typography.caption,
+    color: colors.textSecondary,
+    textAlign: 'center',
+    marginTop: spacing.xs,
+  },
+  section: {
+    padding: spacing.md,
+  },
+  sectionHeader: {
+    marginBottom: spacing.lg,
+    alignItems: 'center',
+  },
+  sectionTitle: {
+    ...typography.h2,
     color: colors.text,
-    fontSize: 16,
-    fontWeight: '600',
+    textAlign: 'center',
+    fontWeight: '800',
+    marginBottom: spacing.xs,
+  },
+  sectionSubtitle: {
+    ...typography.body,
+    color: colors.textSecondary,
+    textAlign: 'center',
+  },
+  horizontalScroll: {
+    marginBottom: spacing.lg,
+  },
+  cardWrapper: {
+    marginRight: spacing.md,
+    width: width * 0.7,
+  },
+  exploreButton: {
+    alignSelf: 'center',
+    marginTop: spacing.md,
+  },
+  bottomSpacer: {
+    height: 100,
   },
 });
