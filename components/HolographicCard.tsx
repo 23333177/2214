@@ -54,7 +54,7 @@ export default function HolographicCard({
         false
       );
     }
-  }, [animated]);
+  }, [animated, glow, rainbow, shimmer]);
 
   const getIntensityMultiplier = () => {
     switch (intensity) {

@@ -45,7 +45,7 @@ export default function FloralElement({
         true
       );
     }
-  }, [animated]);
+  }, [animated, bloom, sway]);
 
   const animatedStyle = useAnimatedStyle(() => ({
     transform: [

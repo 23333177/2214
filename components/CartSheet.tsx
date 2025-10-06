@@ -29,7 +29,7 @@ export default function CartSheet({ isVisible, onClose }: CartSheetProps) {
 
   React.useEffect(() => {
     translateY.value = withSpring(isVisible ? 0 : 1000);
-  }, [isVisible]);
+  }, [isVisible, translateY]);
 
   const animatedStyle = useAnimatedStyle(() => ({
     transform: [{ translateY: translateY.value }],

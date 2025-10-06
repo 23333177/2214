@@ -34,7 +34,7 @@ export default function ProfileScreen() {
   React.useEffect(() => {
     fadeIn.value = withTiming(1, { duration: 800 });
     slideUp.value = withSpring(0);
-  }, []);
+  }, [fadeIn, slideUp]);
 
   const animatedStyle = useAnimatedStyle(() => ({
     opacity: fadeIn.value,

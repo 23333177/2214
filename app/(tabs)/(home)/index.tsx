@@ -66,7 +66,7 @@ export default function HomeScreen() {
 
     // Transition de section
     sectionTransition.value = withSpring(selectedSection === 'chaos' ? 1 : 0);
-  }, [selectedSection]);
+  }, [selectedSection, chaosMode, floatingElements, sectionTransition]);
 
   const chaosAnimatedStyle = useAnimatedStyle(() => {
     const rotate = interpolate(chaosMode.value, [0, 1], [0, 360]);

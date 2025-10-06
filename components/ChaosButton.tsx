@@ -68,7 +68,7 @@ export default function ChaosButton({
         );
       }
     }
-  }, [variant]);
+  }, [variant, colorShift, glitch, rotation]);
 
   const triggerHaptics = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);

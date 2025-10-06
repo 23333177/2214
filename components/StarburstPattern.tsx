@@ -39,7 +39,7 @@ export default function StarburstPattern({
         true
       );
     }
-  }, [animated]);
+  }, [animated, rotation, scale]);
 
   const animatedStyle = useAnimatedStyle(() => ({
     transform: [

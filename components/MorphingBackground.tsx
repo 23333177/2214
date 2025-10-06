@@ -61,7 +61,7 @@ export default function MorphingBackground({
       -1,
       false
     );
-  }, [speed]);
+  }, [speed, colorShift, getDuration, morphValue, waveValue]);
 
   const morphingStyle1 = useAnimatedStyle(() => {
     const scale = interpolate(morphValue.value, [0, 0.5, 1], [1, 1.3, 0.8]);

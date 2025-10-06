@@ -33,6 +33,79 @@ interface ParticleSystemProps {
   style?: any;
 }
 
+const ParticleComponent = ({ particle, animationValue }: { particle: Particle; animationValue: Animated.SharedValue<number> }) => {
+  const animatedStyle = useAnimatedStyle(() => {
+    const progress = animationValue.value;
+    const newX = particle.x + Math.cos(particle.direction) * particle.speed * progress * 100;
+    const newY = particle.y + Math.sin(particle.direction) * particle.speed * progress * 100;
+    
+    const opacity = interpolate(
+      progress,
+      [0, 0.5, 1],
+      [0.8, 1, 0.3]
+    );
+
+    const scale = interpolate(
+      progress,
+      [0, 0.5, 1],
+      [0.5, 1.2, 0.8]
+    );
+
+    return {
+      transform: [
+        { translateX: newX % width },
+        { translateY: newY % height },
+        { scale },
+        { rotate: `${progress * 360}deg` }
+      ],
+      opacity,
+    };
+  });
+
+  const ParticleShape = () => {
+    switch (particle.type) {
+      case 'star':
+        return (
+          <View style={[styles.star, { backgroundColor: particle.color, width: particle.size, height: particle.size }]}>
+            <View style={[styles.starPoint, { backgroundColor: particle.color }]} />
+            <View style={[styles.starPoint, { backgroundColor: particle.color, transform: [{ rotate: '45deg' }] }]} />
+          </View>
+        );
+      case 'heart':
+        return (
+          <View style={[styles.heart, { width: particle.size, height: particle.size }]}>
+            <View style={[styles.heartLeft, { backgroundColor: particle.color }]} />
+            <View style={[styles.heartRight, { backgroundColor: particle.color }]} />
+            <View style={[styles.heartBottom, { backgroundColor: particle.color }]} />
+          </View>
+        );
+      case 'note':
+        return (
+          <View style={[styles.note, { backgroundColor: particle.color, width: particle.size, height: particle.size }]}>
+            <View style={[styles.noteStem, { backgroundColor: particle.color }]} />
+          </View>
+        );
+      case 'diamond':
+        return (
+          <View style={[styles.diamond, { backgroundColor: particle.color, width: particle.size, height: particle.size }]} />
+        );
+      default:
+        return (
+          <View style={[styles.circle, { backgroundColor: particle.color, width: particle.size, height: particle.size }]} />
+        );
+    }
+  };
+
+  return (
+    <Animated.View
+      key={particle.id}
+      style={[styles.particle, animatedStyle]}
+    >
+      <ParticleShape />
+    </Animated.View>
+  );
+};
+
 export default function ParticleSystem({
   particleCount = 25,
   colors: particleColors = [colors.primary, colors.secondary, colors.accent, colors.tertiary],
@@ -56,7 +129,7 @@ export default function ParticleSystem({
 
   React.useEffect(() => {
     particles.current = Array.from({ length: particleCount }, (_, i) => createParticle(i));
-  }, [particleCount]);
+  }, [particleCount, createParticle]);
 
   useEffect(() => {
     if (animated) {
@@ -66,84 +139,13 @@ export default function ParticleSystem({
         false
       );
     }
-  }, [animated]);
-
-  const renderParticle = (particle: Particle, index: number) => {
-    const animatedStyle = useAnimatedStyle(() => {
-      const progress = animationValue.value;
-      const newX = particle.x + Math.cos(particle.direction) * particle.speed * progress * 100;
-      const newY = particle.y + Math.sin(particle.direction) * particle.speed * progress * 100;
-      
-      const opacity = interpolate(
-        progress,
-        [0, 0.5, 1],
-        [0.8, 1, 0.3]
-      );
-
-      const scale = interpolate(
-        progress,
-        [0, 0.5, 1],
-        [0.5, 1.2, 0.8]
-      );
-
-      return {
-        transform: [
-          { translateX: newX % width },
-          { translateY: newY % height },
-          { scale },
-          { rotate: `${progress * 360}deg` }
-        ],
-        opacity,
-      };
-    });
-
-    const ParticleShape = () => {
-      switch (particle.type) {
-        case 'star':
-          return (
-            <View style={[styles.star, { backgroundColor: particle.color, width: particle.size, height: particle.size }]}>
-              <View style={[styles.starPoint, { backgroundColor: particle.color }]} />
-              <View style={[styles.starPoint, { backgroundColor: particle.color, transform: [{ rotate: '45deg' }] }]} />
-            </View>
-          );
-        case 'heart':
-          return (
-            <View style={[styles.heart, { width: particle.size, height: particle.size }]}>
-              <View style={[styles.heartLeft, { backgroundColor: particle.color }]} />
-              <View style={[styles.heartRight, { backgroundColor: particle.color }]} />
-              <View style={[styles.heartBottom, { backgroundColor: particle.color }]} />
-            </View>
-          );
-        case 'note':
-          return (
-            <View style={[styles.note, { backgroundColor: particle.color, width: particle.size, height: particle.size }]}>
-              <View style={[styles.noteStem, { backgroundColor: particle.color }]} />
-            </View>
-          );
-        case 'diamond':
-          return (
-            <View style={[styles.diamond, { backgroundColor: particle.color, width: particle.size, height: particle.size }]} />
-          );
-        default:
-          return (
-            <View style={[styles.circle, { backgroundColor: particle.color, width: particle.size, height: particle.size }]} />
-          );
-      }
-    };
-
-    return (
-      <Animated.View
-        key={particle.id}
-        style={[styles.particle, animatedStyle]}
-      >
-        <ParticleShape />
-      </Animated.View>
-    );
-  };
+  }, [animated, animationValue]);
 
   return (
     <View style={[styles.container, style]} pointerEvents="none">
-      {particles.current.map((particle, index) => renderParticle(particle, index))}
+      {particles.current.map((particle) => (
+        <ParticleComponent key={particle.id} particle={particle} animationValue={animationValue} />
+      ))}
     </View>
   );
 }

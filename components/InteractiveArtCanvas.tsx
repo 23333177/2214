@@ -23,6 +23,10 @@ interface TouchPoint {
   size: number;
 }
 
+interface TouchPointComponentProps {
+  point: TouchPoint;
+}
+
 interface InteractiveArtCanvasProps {
   children?: React.ReactNode;
   maxTouchPoints?: number;
@@ -97,14 +101,14 @@ export default function InteractiveArtCanvas({
     ],
   }));
 
-  const TouchPointComponent = ({ point }: { point: TouchPoint }) => {
+  const TouchPointComponent = ({ point }: TouchPointComponentProps) => {
     const opacity = useSharedValue(1);
     const scale = useSharedValue(0);
 
     React.useEffect(() => {
       scale.value = withSpring(1);
       opacity.value = withTiming(0, { duration: fadeOutDuration });
-    }, []);
+    }, [opacity, scale]);
 
     const animatedStyle = useAnimatedStyle(() => ({
       opacity: opacity.value,

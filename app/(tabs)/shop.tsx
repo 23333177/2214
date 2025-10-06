@@ -159,7 +159,7 @@ export default function ShopScreen() {
           animated={true} 
         />
         
-        <InteractiveArtCanvas maxTouchPoints={30} fadeOutDuration={3000>
+        <InteractiveArtCanvas maxTouchPoints={30} fadeOutDuration={3000}>
           <SafeAreaView style={styles.safeArea}>
             <Animated.View style={[styles.content, shopStyle]}>
               {/* Header de boutique galactique */}

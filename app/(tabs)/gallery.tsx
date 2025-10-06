@@ -68,7 +68,7 @@ export default function GalleryScreen() {
       -1,
       true
     );
-  }, []);
+  }, [artPulse, chaosMode, galaxyRotation]);
 
   const filteredArtworks = artworks.filter(artwork => {
     const matchesSearch = artwork.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
