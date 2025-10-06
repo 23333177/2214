@@ -1,161 +1,363 @@
-import React from "react";
-import { Stack, Link } from "expo-router";
-import { FlatList, Pressable, StyleSheet, View, Text, Alert, Platform } from "react-native";
-import { IconSymbol } from "@/components/IconSymbol";
-import { GlassView } from "expo-glass-effect";
-import { useTheme } from "@react-navigation/native";
 
-const ICON_COLOR = "#007AFF";
+import React, { useState } from 'react';
+import {
+  View,
+  Text,
+  ScrollView,
+  TouchableOpacity,
+  StyleSheet,
+  Dimensions,
+  StatusBar,
+} from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
+import { IconSymbol } from '@/components/IconSymbol';
+import { colors, spacing, borderRadius, typography, shadows } from '@/styles/commonStyles';
+import { useApp } from '@/contexts/AppContext';
+import ProductCard from '@/components/ProductCard';
+import ArtworkCard from '@/components/ArtworkCard';
+import CartSheet from '@/components/CartSheet';
+import Animated, {
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+  withSpring,
+  withRepeat,
+  interpolate,
+} from 'react-native-reanimated';
+import { SafeAreaView } from 'react-native-safe-area-context';
+
+const { width, height } = Dimensions.get('window');
 
 export default function HomeScreen() {
-  const theme = useTheme();
-  const modalDemos = [
-    {
-      title: "Standard Modal",
-      description: "Full screen modal presentation",
-      route: "/modal",
-      color: "#007AFF",
-    },
-    {
-      title: "Form Sheet",
-      description: "Bottom sheet with detents and grabber",
-      route: "/formsheet",
-      color: "#34C759",
-    },
-    {
-      title: "Transparent Modal",
-      description: "Overlay without obscuring background",
-      route: "/transparent-modal",
-      color: "#FF9500",
-    }
-  ];
+  const { state, dispatch } = useApp();
+  const [showCart, setShowCart] = useState(false);
+  
+  // Animations
+  const headerOpacity = useSharedValue(0);
+  const headerTranslateY = useSharedValue(-50);
+  const pulseScale = useSharedValue(1);
+  const rotateValue = useSharedValue(0);
 
-  const renderModalDemo = ({ item }: { item: (typeof modalDemos)[0] }) => (
-    <GlassView style={[
-      styles.demoCard,
-      Platform.OS !== 'ios' && { backgroundColor: theme.dark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)' }
-    ]} glassEffectStyle="regular">
-      <View style={[styles.demoIcon, { backgroundColor: item.color }]}>
-        <IconSymbol name="square.grid.3x3" color="white" size={24} />
-      </View>
-      <View style={styles.demoContent}>
-        <Text style={[styles.demoTitle, { color: theme.colors.text }]}>{item.title}</Text>
-        <Text style={[styles.demoDescription, { color: theme.dark ? '#98989D' : '#666' }]}>{item.description}</Text>
-      </View>
-      <Link href={item.route as any} asChild>
-        <Pressable>
-          <GlassView style={[
-            styles.tryButton,
-            Platform.OS !== 'ios' && { backgroundColor: theme.dark ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.08)' }
-          ]} glassEffectStyle="clear">
-            <Text style={[styles.tryButtonText, { color: theme.colors.primary }]}>Try It</Text>
-          </GlassView>
-        </Pressable>
-      </Link>
-    </GlassView>
-  );
+  React.useEffect(() => {
+    // Animation d'entrée
+    headerOpacity.value = withTiming(1, { duration: 1000 });
+    headerTranslateY.value = withSpring(0);
+    
+    // Animation de pulsation continue
+    pulseScale.value = withRepeat(
+      withTiming(1.1, { duration: 2000 }),
+      -1,
+      true
+    );
+    
+    // Rotation continue
+    rotateValue.value = withRepeat(
+      withTiming(360, { duration: 10000 }),
+      -1,
+      false
+    );
+  }, []);
 
-  const renderHeaderRight = () => (
-    <Pressable
-      onPress={() => Alert.alert("Not Implemented", "This feature is not implemented yet")}
-      style={styles.headerButtonContainer}
-    >
-      <IconSymbol name="plus" color={theme.colors.primary} />
-    </Pressable>
-  );
+  const headerAnimatedStyle = useAnimatedStyle(() => ({
+    opacity: headerOpacity.value,
+    transform: [{ translateY: headerTranslateY.value }],
+  }));
 
-  const renderHeaderLeft = () => (
-    <Pressable
-      onPress={() => Alert.alert("Not Implemented", "This feature is not implemented yet")}
-      style={styles.headerButtonContainer}
-    >
-      <IconSymbol
-        name="gear"
-        color={theme.colors.primary}
-      />
-    </Pressable>
-  );
+  const pulseAnimatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: pulseScale.value }],
+  }));
+
+  const rotateAnimatedStyle = useAnimatedStyle(() => ({
+    transform: [{ rotate: `${rotateValue.value}deg` }],
+  }));
+
+  const featuredProducts = state.products.slice(0, 4);
+  const featuredArtworks = state.artworks.slice(0, 3);
+  const cartItemsCount = state.cart.reduce((sum, item) => sum + item.quantity, 0);
 
   return (
-    <>
-      {Platform.OS === 'ios' && (
-        <Stack.Screen
-          options={{
-            title: "Building the app...",
-            headerRight: renderHeaderRight,
-            headerLeft: renderHeaderLeft,
-          }}
-        />
-      )}
-      <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
-        <FlatList
-          data={modalDemos}
-          renderItem={renderModalDemo}
-          keyExtractor={(item) => item.route}
-          contentContainerStyle={[
-            styles.listContainer,
-            Platform.OS !== 'ios' && styles.listContainerWithTabBar
-          ]}
-          contentInsetAdjustmentBehavior="automatic"
-          showsVerticalScrollIndicator={false}
-        />
-      </View>
-    </>
+    <SafeAreaView style={styles.container}>
+      <StatusBar barStyle="light-content" backgroundColor={colors.background} />
+      
+      {/* Header avec panier */}
+      <Animated.View style={[styles.header, headerAnimatedStyle]}>
+        <View>
+          <Text style={styles.greeting}>Bienvenue sur</Text>
+          <Text style={styles.appName}>BeatGallery</Text>
+        </View>
+        <TouchableOpacity
+          style={styles.cartButton}
+          onPress={() => setShowCart(true)}
+        >
+          <IconSymbol name="cart" size={24} color={colors.text} />
+          {cartItemsCount > 0 && (
+            <View style={styles.cartBadge}>
+              <Text style={styles.cartBadgeText}>{cartItemsCount}</Text>
+            </View>
+          )}
+        </TouchableOpacity>
+      </Animated.View>
+
+      <ScrollView
+        style={styles.scrollView}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.scrollContent}
+      >
+        {/* Hero Section */}
+        <LinearGradient
+          colors={[colors.primary, colors.secondary]}
+          style={styles.heroSection}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+        >
+          <Animated.View style={[styles.heroContent, pulseAnimatedStyle]}>
+            <Animated.View style={[styles.musicIcon, rotateAnimatedStyle]}>
+              <IconSymbol name="music.note" size={48} color={colors.text} />
+            </Animated.View>
+            <Text style={styles.heroTitle}>Beats & Art</Text>
+            <Text style={styles.heroSubtitle}>
+              Découvrez des beats uniques et explorez l'art contemporain
+            </Text>
+          </Animated.View>
+        </LinearGradient>
+
+        {/* Navigation rapide */}
+        <View style={styles.quickNav}>
+          <TouchableOpacity
+            style={[styles.navButton, { backgroundColor: colors.primary }]}
+            onPress={() => dispatch({ type: 'SET_CURRENT_VIEW', payload: 'shop' })}
+          >
+            <IconSymbol name="music.note" size={24} color={colors.text} />
+            <Text style={styles.navButtonText}>Boutique</Text>
+          </TouchableOpacity>
+          
+          <TouchableOpacity
+            style={[styles.navButton, { backgroundColor: colors.secondary }]}
+            onPress={() => dispatch({ type: 'SET_CURRENT_VIEW', payload: 'gallery' })}
+          >
+            <IconSymbol name="photo" size={24} color={colors.text} />
+            <Text style={styles.navButtonText}>Galerie</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Produits en vedette */}
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>Beats en vedette</Text>
+            <TouchableOpacity
+              onPress={() => dispatch({ type: 'SET_CURRENT_VIEW', payload: 'shop' })}
+            >
+              <Text style={styles.seeAllText}>Voir tout</Text>
+            </TouchableOpacity>
+          </View>
+          
+          <View style={styles.productsGrid}>
+            {featuredProducts.map((product) => (
+              <ProductCard
+                key={product.id}
+                product={product}
+                onPress={() => console.log('Product pressed:', product.title)}
+              />
+            ))}
+          </View>
+        </View>
+
+        {/* Œuvres d'art en vedette */}
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>Art en vedette</Text>
+            <TouchableOpacity
+              onPress={() => dispatch({ type: 'SET_CURRENT_VIEW', payload: 'gallery' })}
+            >
+              <Text style={styles.seeAllText}>Voir tout</Text>
+            </TouchableOpacity>
+          </View>
+          
+          {featuredArtworks.map((artwork) => (
+            <ArtworkCard
+              key={artwork.id}
+              artwork={artwork}
+              onPress={() => console.log('Artwork pressed:', artwork.title)}
+            />
+          ))}
+        </View>
+
+        {/* Call to action pour les artistes */}
+        <LinearGradient
+          colors={[colors.accent, colors.primary]}
+          style={styles.ctaSection}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 0 }}
+        >
+          <Text style={styles.ctaTitle}>Vous êtes artiste ?</Text>
+          <Text style={styles.ctaSubtitle}>
+            Exposez gratuitement vos œuvres dans notre galerie
+          </Text>
+          <TouchableOpacity style={styles.ctaButton}>
+            <Text style={styles.ctaButtonText}>Rejoindre la galerie</Text>
+            <IconSymbol name="arrow.right" size={20} color={colors.background} />
+          </TouchableOpacity>
+        </LinearGradient>
+      </ScrollView>
+
+      {/* Panier modal */}
+      <CartSheet isVisible={showCart} onClose={() => setShowCart(false)} />
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    // backgroundColor handled dynamically
+    backgroundColor: colors.background,
   },
-  listContainer: {
-    paddingVertical: 16,
-    paddingHorizontal: 16,
-  },
-  listContainerWithTabBar: {
-    paddingBottom: 100, // Extra padding for floating tab bar
-  },
-  demoCard: {
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 12,
+  header: {
     flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
   },
-  demoIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+  greeting: {
+    color: colors.textSecondary,
+    fontSize: 14,
+  },
+  appName: {
+    color: colors.text,
+    fontSize: 24,
+    fontWeight: '700',
+  },
+  cartButton: {
+    position: 'relative',
+    padding: spacing.sm,
+  },
+  cartBadge: {
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    backgroundColor: colors.error,
+    borderRadius: 10,
+    minWidth: 20,
+    height: 20,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 16,
   },
-  demoContent: {
+  cartBadgeText: {
+    color: colors.text,
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  scrollView: {
     flex: 1,
   },
-  demoTitle: {
-    fontSize: 18,
+  scrollContent: {
+    paddingBottom: 100, // Space for floating tab bar
+  },
+  heroSection: {
+    margin: spacing.lg,
+    borderRadius: borderRadius.xl,
+    padding: spacing.xl,
+    alignItems: 'center',
+    ...shadows.large,
+  },
+  heroContent: {
+    alignItems: 'center',
+  },
+  musicIcon: {
+    marginBottom: spacing.md,
+  },
+  heroTitle: {
+    color: colors.text,
+    fontSize: 28,
+    fontWeight: '700',
+    marginBottom: spacing.sm,
+  },
+  heroSubtitle: {
+    color: colors.text,
+    fontSize: 16,
+    textAlign: 'center',
+    opacity: 0.9,
+  },
+  quickNav: {
+    flexDirection: 'row',
+    paddingHorizontal: spacing.lg,
+    marginBottom: spacing.lg,
+    gap: spacing.md,
+  },
+  navButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: spacing.md,
+    borderRadius: borderRadius.md,
+    ...shadows.small,
+  },
+  navButtonText: {
+    color: colors.text,
+    fontSize: 16,
     fontWeight: '600',
-    marginBottom: 4,
-    // color handled dynamically
+    marginLeft: spacing.sm,
   },
-  demoDescription: {
-    fontSize: 14,
-    lineHeight: 18,
-    // color handled dynamically
+  section: {
+    marginBottom: spacing.xl,
   },
-  headerButtonContainer: {
-    padding: 6,
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: spacing.lg,
+    marginBottom: spacing.md,
   },
-  tryButton: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 6,
+  sectionTitle: {
+    color: colors.text,
+    fontSize: 20,
+    fontWeight: '700',
   },
-  tryButtonText: {
+  seeAllText: {
+    color: colors.primary,
     fontSize: 14,
     fontWeight: '600',
-    // color handled dynamically
+  },
+  productsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    paddingHorizontal: spacing.lg,
+    justifyContent: 'space-between',
+  },
+  ctaSection: {
+    margin: spacing.lg,
+    borderRadius: borderRadius.xl,
+    padding: spacing.xl,
+    alignItems: 'center',
+    ...shadows.large,
+  },
+  ctaTitle: {
+    color: colors.background,
+    fontSize: 24,
+    fontWeight: '700',
+    marginBottom: spacing.sm,
+  },
+  ctaSubtitle: {
+    color: colors.background,
+    fontSize: 16,
+    textAlign: 'center',
+    marginBottom: spacing.lg,
+    opacity: 0.9,
+  },
+  ctaButton: {
+    backgroundColor: colors.background,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
+    borderRadius: borderRadius.md,
+    ...shadows.small,
+  },
+  ctaButtonText: {
+    color: colors.text,
+    fontSize: 16,
+    fontWeight: '600',
+    marginRight: spacing.sm,
   },
 });

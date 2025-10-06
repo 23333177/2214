@@ -1,91 +1,368 @@
-import React from "react";
-import { View, Text, StyleSheet, ScrollView, Platform } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
-import { IconSymbol } from "@/components/IconSymbol";
-import { GlassView } from "expo-glass-effect";
-import { useTheme } from "@react-navigation/native";
+
+import React, { useState } from 'react';
+import {
+  View,
+  Text,
+  ScrollView,
+  TouchableOpacity,
+  StyleSheet,
+  Image,
+  Switch,
+  Alert,
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { LinearGradient } from 'expo-linear-gradient';
+import { IconSymbol } from '@/components/IconSymbol';
+import { colors, spacing, borderRadius, shadows } from '@/styles/commonStyles';
+import { useApp } from '@/contexts/AppContext';
+import Animated, {
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+  withSpring,
+} from 'react-native-reanimated';
 
 export default function ProfileScreen() {
-  const theme = useTheme();
+  const { state } = useApp();
+  const [isArtist, setIsArtist] = useState(false);
+  const [notifications, setNotifications] = useState(true);
+  const [darkMode, setDarkMode] = useState(true);
+
+  const fadeIn = useSharedValue(0);
+  const slideUp = useSharedValue(30);
+
+  React.useEffect(() => {
+    fadeIn.value = withTiming(1, { duration: 800 });
+    slideUp.value = withSpring(0);
+  }, []);
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    opacity: fadeIn.value,
+    transform: [{ translateY: slideUp.value }],
+  }));
+
+  const handleBecomeBeatmaker = () => {
+    Alert.alert(
+      'Devenir Beatmaker',
+      'Voulez-vous créer un profil beatmaker pour vendre vos créations ?',
+      [
+        { text: 'Annuler', style: 'cancel' },
+        { text: 'Confirmer', onPress: () => console.log('Becoming beatmaker') },
+      ]
+    );
+  };
+
+  const handleBecomeArtist = () => {
+    Alert.alert(
+      'Rejoindre la Galerie',
+      'Voulez-vous rejoindre notre galerie d\'art pour exposer vos œuvres gratuitement ?',
+      [
+        { text: 'Annuler', style: 'cancel' },
+        { text: 'Rejoindre', onPress: () => setIsArtist(true) },
+      ]
+    );
+  };
+
+  const cartTotal = state.cart.reduce(
+    (sum, item) => sum + item.product.price * item.quantity,
+    0
+  );
 
   return (
-    <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.colors.background }]} edges={['top']}>
+    <SafeAreaView style={styles.container}>
       <ScrollView
-        style={styles.container}
-        contentContainerStyle={[
-          styles.contentContainer,
-          Platform.OS !== 'ios' && styles.contentContainerWithTabBar
-        ]}
+        style={styles.scrollView}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.scrollContent}
       >
-        <GlassView style={[
-          styles.profileHeader,
-          Platform.OS !== 'ios' && { backgroundColor: theme.dark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)' }
-        ]} glassEffectStyle="regular">
-          <IconSymbol name="person.circle.fill" size={80} color={theme.colors.primary} />
-          <Text style={[styles.name, { color: theme.colors.text }]}>John Doe</Text>
-          <Text style={[styles.email, { color: theme.dark ? '#98989D' : '#666' }]}>john.doe@example.com</Text>
-        </GlassView>
+        {/* Header Profile */}
+        <Animated.View style={[styles.profileHeader, animatedStyle]}>
+          <LinearGradient
+            colors={[colors.primary, colors.secondary]}
+            style={styles.profileGradient}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+          >
+            <View style={styles.profileInfo}>
+              <View style={styles.avatarContainer}>
+                <Image
+                  source={{ uri: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=200' }}
+                  style={styles.avatar}
+                />
+                <TouchableOpacity style={styles.editAvatarButton}>
+                  <IconSymbol name="camera" size={16} color={colors.text} />
+                </TouchableOpacity>
+              </View>
+              <Text style={styles.userName}>Utilisateur</Text>
+              <Text style={styles.userEmail}>user@example.com</Text>
+            </View>
+          </LinearGradient>
+        </Animated.View>
 
-        <GlassView style={[
-          styles.section,
-          Platform.OS !== 'ios' && { backgroundColor: theme.dark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)' }
-        ]} glassEffectStyle="regular">
-          <View style={styles.infoRow}>
-            <IconSymbol name="phone.fill" size={20} color={theme.dark ? '#98989D' : '#666'} />
-            <Text style={[styles.infoText, { color: theme.colors.text }]}>+1 (555) 123-4567</Text>
+        {/* Stats */}
+        <View style={styles.statsContainer}>
+          <View style={styles.statCard}>
+            <Text style={styles.statNumber}>{state.cart.length}</Text>
+            <Text style={styles.statLabel}>Dans le panier</Text>
           </View>
-          <View style={styles.infoRow}>
-            <IconSymbol name="location.fill" size={20} color={theme.dark ? '#98989D' : '#666'} />
-            <Text style={[styles.infoText, { color: theme.colors.text }]}>San Francisco, CA</Text>
+          <View style={styles.statCard}>
+            <Text style={styles.statNumber}>{state.favoriteArtworks.length}</Text>
+            <Text style={styles.statLabel}>Favoris</Text>
           </View>
-        </GlassView>
+          <View style={styles.statCard}>
+            <Text style={styles.statNumber}>{cartTotal.toFixed(0)}€</Text>
+            <Text style={styles.statLabel}>Total panier</Text>
+          </View>
+        </View>
+
+        {/* Actions rapides */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Actions rapides</Text>
+          
+          <TouchableOpacity style={styles.actionCard} onPress={handleBecomeBeatmaker}>
+            <View style={styles.actionIcon}>
+              <IconSymbol name="music.note" size={24} color={colors.primary} />
+            </View>
+            <View style={styles.actionContent}>
+              <Text style={styles.actionTitle}>Devenir Beatmaker</Text>
+              <Text style={styles.actionSubtitle}>
+                Vendez vos beats et créations musicales
+              </Text>
+            </View>
+            <IconSymbol name="chevron.right" size={20} color={colors.textSecondary} />
+          </TouchableOpacity>
+
+          <TouchableOpacity style={styles.actionCard} onPress={handleBecomeArtist}>
+            <View style={styles.actionIcon}>
+              <IconSymbol name="photo" size={24} color={colors.secondary} />
+            </View>
+            <View style={styles.actionContent}>
+              <Text style={styles.actionTitle}>Rejoindre la Galerie</Text>
+              <Text style={styles.actionSubtitle}>
+                Exposez gratuitement vos œuvres d'art
+              </Text>
+            </View>
+            <IconSymbol name="chevron.right" size={20} color={colors.textSecondary} />
+          </TouchableOpacity>
+        </View>
+
+        {/* Paramètres */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Paramètres</Text>
+          
+          <View style={styles.settingCard}>
+            <View style={styles.settingInfo}>
+              <IconSymbol name="bell" size={20} color={colors.textSecondary} />
+              <Text style={styles.settingTitle}>Notifications</Text>
+            </View>
+            <Switch
+              value={notifications}
+              onValueChange={setNotifications}
+              trackColor={{ false: colors.surface, true: colors.primary }}
+              thumbColor={colors.text}
+            />
+          </View>
+
+          <View style={styles.settingCard}>
+            <View style={styles.settingInfo}>
+              <IconSymbol name="moon" size={20} color={colors.textSecondary} />
+              <Text style={styles.settingTitle}>Mode sombre</Text>
+            </View>
+            <Switch
+              value={darkMode}
+              onValueChange={setDarkMode}
+              trackColor={{ false: colors.surface, true: colors.primary }}
+              thumbColor={colors.text}
+            />
+          </View>
+
+          <TouchableOpacity style={styles.settingCard}>
+            <View style={styles.settingInfo}>
+              <IconSymbol name="questionmark.circle" size={20} color={colors.textSecondary} />
+              <Text style={styles.settingTitle}>Aide & Support</Text>
+            </View>
+            <IconSymbol name="chevron.right" size={20} color={colors.textSecondary} />
+          </TouchableOpacity>
+
+          <TouchableOpacity style={styles.settingCard}>
+            <View style={styles.settingInfo}>
+              <IconSymbol name="info.circle" size={20} color={colors.textSecondary} />
+              <Text style={styles.settingTitle}>À propos</Text>
+            </View>
+            <IconSymbol name="chevron.right" size={20} color={colors.textSecondary} />
+          </TouchableOpacity>
+        </View>
+
+        {/* Déconnexion */}
+        <TouchableOpacity style={styles.logoutButton}>
+          <IconSymbol name="arrow.right.square" size={20} color={colors.error} />
+          <Text style={styles.logoutText}>Se déconnecter</Text>
+        </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    // backgroundColor handled dynamically
-  },
   container: {
     flex: 1,
+    backgroundColor: colors.background,
   },
-  contentContainer: {
-    padding: 20,
+  scrollView: {
+    flex: 1,
   },
-  contentContainerWithTabBar: {
-    paddingBottom: 100, // Extra padding for floating tab bar
+  scrollContent: {
+    paddingBottom: 100, // Space for floating tab bar
   },
   profileHeader: {
+    margin: spacing.lg,
+    borderRadius: borderRadius.xl,
+    overflow: 'hidden',
+    ...shadows.large,
+  },
+  profileGradient: {
+    padding: spacing.xl,
     alignItems: 'center',
-    borderRadius: 12,
-    padding: 32,
-    marginBottom: 16,
-    gap: 12,
   },
-  name: {
+  profileInfo: {
+    alignItems: 'center',
+  },
+  avatarContainer: {
+    position: 'relative',
+    marginBottom: spacing.md,
+  },
+  avatar: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    borderWidth: 3,
+    borderColor: colors.text,
+  },
+  editAvatarButton: {
+    position: 'absolute',
+    bottom: 0,
+    right: 0,
+    backgroundColor: colors.background,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: colors.text,
+  },
+  userName: {
+    color: colors.text,
     fontSize: 24,
-    fontWeight: 'bold',
-    // color handled dynamically
+    fontWeight: '700',
+    marginBottom: 4,
   },
-  email: {
+  userEmail: {
+    color: colors.text,
     fontSize: 16,
-    // color handled dynamically
+    opacity: 0.8,
+  },
+  statsContainer: {
+    flexDirection: 'row',
+    paddingHorizontal: spacing.lg,
+    marginBottom: spacing.lg,
+    gap: spacing.md,
+  },
+  statCard: {
+    flex: 1,
+    backgroundColor: colors.surface,
+    padding: spacing.md,
+    borderRadius: borderRadius.md,
+    alignItems: 'center',
+    ...shadows.small,
+  },
+  statNumber: {
+    color: colors.text,
+    fontSize: 20,
+    fontWeight: '700',
+    marginBottom: 4,
+  },
+  statLabel: {
+    color: colors.textSecondary,
+    fontSize: 12,
+    textAlign: 'center',
   },
   section: {
-    borderRadius: 12,
-    padding: 20,
-    gap: 12,
+    paddingHorizontal: spacing.lg,
+    marginBottom: spacing.lg,
   },
-  infoRow: {
+  sectionTitle: {
+    color: colors.text,
+    fontSize: 18,
+    fontWeight: '700',
+    marginBottom: spacing.md,
+  },
+  actionCard: {
+    backgroundColor: colors.surface,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    padding: spacing.md,
+    borderRadius: borderRadius.md,
+    marginBottom: spacing.sm,
+    ...shadows.small,
   },
-  infoText: {
+  actionIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: colors.background,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: spacing.md,
+  },
+  actionContent: {
+    flex: 1,
+  },
+  actionTitle: {
+    color: colors.text,
     fontSize: 16,
-    // color handled dynamically
+    fontWeight: '600',
+    marginBottom: 2,
+  },
+  actionSubtitle: {
+    color: colors.textSecondary,
+    fontSize: 14,
+  },
+  settingCard: {
+    backgroundColor: colors.surface,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: spacing.md,
+    borderRadius: borderRadius.md,
+    marginBottom: spacing.sm,
+    ...shadows.small,
+  },
+  settingInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  settingTitle: {
+    color: colors.text,
+    fontSize: 16,
+    marginLeft: spacing.md,
+  },
+  logoutButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.surface,
+    margin: spacing.lg,
+    padding: spacing.md,
+    borderRadius: borderRadius.md,
+    borderWidth: 1,
+    borderColor: colors.error,
+    ...shadows.small,
+  },
+  logoutText: {
+    color: colors.error,
+    fontSize: 16,
+    fontWeight: '600',
+    marginLeft: spacing.sm,
   },
 });
